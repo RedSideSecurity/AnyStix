@@ -3,6 +3,33 @@
 Harvest **malicious public submissions from ANY.RUN by submission country** and
 emit a **STIX 2.1** bundle (optionally push straight into OpenCTI).
 
+## Why
+
+[ANY.RUN](https://app.any.run/submissions) runs one of the largest **free,
+public interactive malware sandboxes** on the internet — thousands of fresh
+samples and URLs are detonated there every day, and every public analysis is
+openly available. That firehose is a goldmine of **fresh, real-world threat
+intelligence**, but it isn't organised around *your* threat model.
+
+**AnyStix turns that public feed into a country-focused intel source.** Point it
+at a country (e.g. `armenia`) and it pulls the malware and malicious URLs that
+were **actually submitted from / targeting your region**, keeps only the
+confirmed-malicious verdicts, enriches executables with their **SHA-256**, and
+packages everything as standards-compliant **STIX 2.1**.
+
+The result is an intelligence source you own and can act on for **proactive
+defense**: feed the extracted **IoCs** (file hashes, URLs, domains, IPs) into
+your detection and blocking stack — SIEM, firewall/proxy denylists, EDR, DNS
+sinkholes — *before* those samples reach your users. Run it on a schedule
+(systemd timer included) and the bundle grows incrementally as new threats
+appear in your region.
+
+Because the output is plain **STIX 2.1**, those IoCs import cleanly into
+open-source threat-intelligence platforms — most notably **[OpenCTI](https://www.opencti.io/)**
+(built-in `--push-opencti`), as well as MISP, Microsoft Sentinel, ThreatConnect,
+and anything else that speaks STIX/TAXII — so the intelligence slots straight
+into your existing workflow.
+
 ```
 armenia ─▶ AM
         ─▶ Meteor DDP method getAnalysisPublicMobileAdvancedTi (country + dateRange)
