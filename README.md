@@ -3,6 +3,8 @@
 Harvest **malicious public submissions from ANY.RUN by submission country** and
 emit a **STIX 2.1** bundle (optionally push straight into OpenCTI).
 
+![AnyStix harvesting malicious submissions for a country and emitting STIX 2.1 indicators](docs/anystix-demo.png)
+
 ## Why
 
 [ANY.RUN](https://app.any.run/submissions) runs one of the largest **free,
