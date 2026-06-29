@@ -5,6 +5,22 @@ emit a **STIX 2.1** bundle (optionally push straight into OpenCTI).
 
 ![AnyStix harvesting malicious submissions for a country and emitting STIX 2.1 indicators](docs/anystix-demo.png)
 
+> ### "Sell me this pen."
+>
+> In *The Wolf of Wall Street*, the trick was never the pen — it was first
+> creating the **need**: *"write your name on this napkin."* No pen, no name.
+> Suddenly the pen is essential.
+>
+> Threat intelligence is the same. You can't block, detect, or hunt what you
+> can't **see** — and right now, malware is being detonated **from and against
+> your country** in ANY.RUN's public feed, while your defenses wait on next
+> quarter's vendor report. The gap between *"a threat is hitting my region"* and
+> *"my firewall knows about it"* is where breaches happen.
+>
+> **AnyStix is the pen.** It puts a live, country-specific stream of real threats
+> in your hand — as ready-to-action IoCs — so you defend *before* the incident,
+> not after.
+
 ## Why
 
 [ANY.RUN](https://app.any.run/submissions) runs one of the largest **free,
