@@ -3,7 +3,9 @@
 Harvest **malicious public submissions from ANY.RUN by submission country** and
 emit a **STIX 2.1** bundle (optionally push straight into OpenCTI).
 
-![AnyStix harvesting malicious submissions for a country and emitting STIX 2.1 indicators](docs/anystix-demo.png)
+![AnyStix-harvested IoCs imported into OpenCTI — the ANY.RUN organization with a full STIX bundle (111 indicators)](docs/opencti-import.jpg)
+
+<sub>AnyStix output imported into **OpenCTI**: the country's malicious submissions land as a STIX bundle under the ANY.RUN organization, ready for correlation and proactive defense.</sub>
 
 > ### "Sell me this pen."
 >
@@ -140,6 +142,8 @@ accepts systemd spans (`30min`, `1h`, `6h`). To track a different country,
 re-run `install` with a new `--country` (it overwrites the unit).
 
 ## Output
+
+![A terminal run of AnyStix: matching items, SHA-256 enrichment, and the resulting STIX indicator patterns](docs/anystix-demo.png)
 
 STIX 2.1 `bundle` with:
 
