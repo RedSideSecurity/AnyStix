@@ -105,6 +105,17 @@ python anystix.py --country armenia --from-json AM_items.json
 python anyrun_ddp.py AM
 ```
 
+> **OpenCTI: make imports fully automatic.** `--push-opencti` hands the raw
+> bundle to OpenCTI's `uploadImport` mutation and lets the platform's own
+> **ImportFileStix** connector + worker parse it — so the push never breaks on a
+> client/server version mismatch (no `pycti`). For unattended/scheduled use,
+> set **`CONNECTOR_VALIDATE_BEFORE_IMPORT=false`** on the `connector-import-file-stix`
+> connector and restart it (`docker compose up -d connector-import-file-stix`).
+> With validation **on**, every upload creates an analyst workbench that a human
+> must approve before the IoCs become searchable; with it **off**, each upload
+> imports straight into the knowledge base. The uploaded file's progress is
+> visible under **Data → Import**.
+
 | Option | Description |
 |--------|-------------|
 | `--country` | Country name or ISO code (`armenia`, `AM`, `arm`). **Required.** |
@@ -115,7 +126,7 @@ python anyrun_ddp.py AM
 | `--no-hashes` | Skip per-task SHA-256 enrichment (file indicators then match on `file:name` only). |
 | `--dump-items` | Also write the raw matched feed items to a JSON file. |
 | `--from-json` | Build STIX from saved items instead of the network. |
-| `--push-opencti` | Import the bundle via `pycti` (needs `OPENCTI_URL`/`OPENCTI_TOKEN`). |
+| `--push-opencti` | Upload the bundle to OpenCTI for its worker to ingest (needs `OPENCTI_URL`/`OPENCTI_TOKEN`). Uses only the standard library — no `pycti`. |
 
 ## Run on a schedule (systemd, Ubuntu)
 
