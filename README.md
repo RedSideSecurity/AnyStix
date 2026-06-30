@@ -105,16 +105,40 @@ python anystix.py --country armenia --from-json AM_items.json
 python anyrun_ddp.py AM
 ```
 
-> **OpenCTI: make imports fully automatic.** `--push-opencti` hands the raw
-> bundle to OpenCTI's `uploadImport` mutation and lets the platform's own
-> **ImportFileStix** connector + worker parse it — so the push never breaks on a
-> client/server version mismatch (no `pycti`). For unattended/scheduled use,
-> set **`CONNECTOR_VALIDATE_BEFORE_IMPORT=false`** on the `connector-import-file-stix`
-> connector and restart it (`docker compose up -d connector-import-file-stix`).
-> With validation **on**, every upload creates an analyst workbench that a human
-> must approve before the IoCs become searchable; with it **off**, each upload
-> imports straight into the knowledge base. The uploaded file's progress is
-> visible under **Data → Import**.
+### ⚠️ OpenCTI: enable automatic import (read this before scheduling `--push`)
+
+`--push-opencti` hands the raw bundle to OpenCTI's `uploadImport` mutation and
+lets the platform's own **ImportFileStix** connector + worker parse it — so the
+push never breaks on a client/server version mismatch (no `pycti` dependency).
+
+**By default, OpenCTI does not import the file automatically.** If the
+`connector-import-file-stix` connector runs with `CONNECTOR_VALIDATE_BEFORE_IMPORT=true`,
+every upload creates an **analyst workbench that a human must open and validate**
+before any IoC becomes searchable. Validating one workbench does **not** carry
+over to the next — so a scheduled run (e.g. hourly) produces a **new
+unvalidated workbench every single run**, forever. This is almost certainly not
+what you want for an automated feed.
+
+To make imports fully hands-off, set this on the connector and restart it:
+
+```yaml
+# docker-compose.yml
+connector-import-file-stix:
+  environment:
+    - CONNECTOR_VALIDATE_BEFORE_IMPORT=false
+```
+
+```bash
+docker compose up -d connector-import-file-stix
+```
+
+| `CONNECTOR_VALIDATE_BEFORE_IMPORT` | Workbench created? | Manual validation? |
+|---|---|---|
+| `true` (default)  | every upload | **required every time** |
+| `false`           | never        | never — imports straight into the knowledge base |
+
+Watch an upload's progress under **Data → Import**; once imported, the IoCs
+appear under **Observations → Indicators** (author **ANY.RUN**).
 
 | Option | Description |
 |--------|-------------|
