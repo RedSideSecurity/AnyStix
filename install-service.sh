@@ -60,7 +60,7 @@ cmd_install() {
   python3 -m venv "$APP_DIR/.venv"
   "$APP_DIR/.venv/bin/pip" install --quiet --upgrade pip
   "$APP_DIR/.venv/bin/pip" install --quiet -r "$APP_DIR/requirements.txt"
-  [ "$PUSH" -eq 1 ] && "$APP_DIR/.venv/bin/pip" install --quiet pycti || true
+  # --push uses only stdlib urllib, so there's nothing extra to install.
   # World-readable so the systemd DynamicUser can execute it.
   chmod -R a+rX "$APP_DIR"
 

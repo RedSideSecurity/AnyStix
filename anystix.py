@@ -204,8 +204,9 @@ def main(argv=None) -> int:
     ap.add_argument("--dump-items", default=None,
                     help="Also write the raw matched items to this JSON file.")
     ap.add_argument("--push-opencti", action="store_true",
-                    help="Import the bundle into OpenCTI (needs OPENCTI_URL + "
-                         "OPENCTI_TOKEN env vars; never hardcode the token).")
+                    help="Upload the bundle to OpenCTI for its worker to ingest "
+                         "(needs OPENCTI_URL + OPENCTI_TOKEN env vars; never "
+                         "hardcode the token). No pycti required.")
     args = ap.parse_args(argv)
 
     try:
@@ -300,23 +301,87 @@ def main(argv=None) -> int:
 
 
 def push_opencti(bundle_path: Path) -> int:
+    """Upload the raw STIX bundle to OpenCTI and let the platform's own worker
+    parse it (via the built-in ImportFileStix connector).
+
+    We deliberately do NOT use pycti: that client rebuilds every object as a
+    version-specific GraphQL mutation, so it breaks whenever the client and the
+    server drift apart. Handing over the raw file keeps the parsing server-side,
+    where the version always matches. The push is plain stdlib urllib — no extra
+    dependency, nothing here couples to the OpenCTI schema.
+    """
+    import ssl
+    import urllib.request
+    import urllib.error
+
     url = os.environ.get("OPENCTI_URL")
     token = os.environ.get("OPENCTI_TOKEN")
     if not url or not token:
         print("[!] Set OPENCTI_URL and OPENCTI_TOKEN env vars to push.",
               file=sys.stderr)
         return 2
+
+    endpoint = url.rstrip("/") + "/graphql"
+    payload = bundle_path.read_bytes()
+
+    # GraphQL multipart-request spec (https://github.com/jaydenseric/
+    # graphql-multipart-request-spec): one file mapped to the $file variable.
+    boundary = "----anystix" + uuidlib.uuid4().hex
+    operations = json.dumps({
+        "query": "mutation($file: Upload!) { uploadImport(file: $file) "
+                 "{ id name } }",
+        "variables": {"file": None},
+    })
+    file_map = json.dumps({"0": ["variables.file"]})
+
+    def _part(name, body, *, filename=None, ctype=None):
+        head = f'--{boundary}\r\nContent-Disposition: form-data; name="{name}"'
+        if filename:
+            head += f'; filename="{filename}"'
+        if ctype:
+            head += f"\r\nContent-Type: {ctype}"
+        return head.encode() + b"\r\n\r\n" + body + b"\r\n"
+
+    body = (
+        _part("operations", operations.encode())
+        + _part("map", file_map.encode())
+        + _part("0", payload, filename=bundle_path.name,
+                ctype="application/json")
+        + f"--{boundary}--\r\n".encode()
+    )
+
+    req = urllib.request.Request(endpoint, data=body, method="POST")
+    req.add_header("Authorization", f"Bearer {token}")
+    req.add_header("Content-Type",
+                   f"multipart/form-data; boundary={boundary}")
+    # Apollo Server's CSRF protection blocks multipart uploads without this.
+    req.add_header("Apollo-Require-Preflight", "true")
+
+    # Self-signed localhost OpenCTI is the norm; skip cert verification.
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
     try:
-        import urllib3
-        from pycti import OpenCTIApiClient
-        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-        client = OpenCTIApiClient(url, token, "error", ssl_verify=False)
-        client.stix2.import_bundle_from_json(bundle_path.read_text())
-        print(f"[+] Imported {bundle_path} into OpenCTI at {url}", file=sys.stderr)
-        return 0
-    except Exception as e:
-        print(f"[!] OpenCTI import failed: {e}", file=sys.stderr)
+        with urllib.request.urlopen(req, context=ctx, timeout=60) as resp:
+            data = json.loads(resp.read().decode())
+    except urllib.error.HTTPError as e:
+        detail = e.read().decode(errors="replace")[:400]
+        print(f"[!] OpenCTI upload failed: HTTP {e.code} {detail}",
+              file=sys.stderr)
         return 1
+    except Exception as e:
+        print(f"[!] OpenCTI upload failed: {e}", file=sys.stderr)
+        return 1
+
+    if data.get("errors"):
+        print(f"[!] OpenCTI rejected the upload: {data['errors']}",
+              file=sys.stderr)
+        return 1
+    f = (data.get("data") or {}).get("uploadImport") or {}
+    print(f"[+] Uploaded {bundle_path.name} to OpenCTI import (file id "
+          f"{f.get('id')}). The ImportFileStix connector + worker will ingest "
+          f"it.", file=sys.stderr)
+    return 0
 
 
 if __name__ == "__main__":

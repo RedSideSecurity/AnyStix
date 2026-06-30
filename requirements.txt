@@ -1,5 +1,5 @@
 websocket-client>=1.8
 stix2>=3.0
 pycountry>=24.0
-# optional, only for --push-opencti:
-# pycti>=6.0
+# --push-opencti uses only the Python standard library (urllib) — no pycti,
+# so it never breaks on an OpenCTI client/server version mismatch.
